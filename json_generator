@@ -1,0 +1,59 @@
+import os
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+
+# Load the environment variables
+load_dotenv()
+google_api_key = os.getenv("GOOGLE_API_KEY")
+
+# Initialize the LLM with the API key and a valid model name
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-pro",
+    google_api_key=google_api_key,
+    temperature=0.7
+)
+
+# The strict prompt for the LLM
+prompt_text = """
+You are a BDD-to-JSON converter. Your task is to transform a Gherkin BDD "Scenario Outline" into a strict JSON format.
+
+Rules:
+1.  Read each step from the BDD scenario outline.
+2.  Translate each step into a JSON object.
+3.  The JSON object must have three keys: "step", "page", and "capture".
+4.  The value of the "step" key should be a concise, lowercase action (e.g., "click", "enter", "select").
+5.  The value of the "page" key should be the name of the page where the action occurs (e.g., "LoginPage", "LandingPage").
+6.  The value of the "capture" key must always be `false`.
+7.  The final output must be a single, flat JSON array of these objects. Do not include any other text or explanation.
+
+Here is the BDD to convert:
+
+contenty
+
+---
+
+Strictly output the JSON array only, without any other conversational text.
+"""
+
+# Create a simple chain with the LLM and the prompt
+chain = RunnablePassthrough() | llm
+
+try:
+    # Invoke the chain with the prompt
+    result = chain.invoke(prompt_text)
+
+    # The result.content will contain the raw JSON string
+    json_string = result.content.strip()
+
+    # Attempt to parse the JSON string to confirm it's valid
+    parsed_json = json.loads(json_string)
+
+    print("Successfully received and parsed JSON:")
+    print(json.dumps(parsed_json, indent=2))
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+    print("Received content:")
+    print(result.content if 'result' in locals() else "No content received.")
