@@ -57,3 +57,120 @@ except Exception as e:
     print(f"An error occurred: {e}")
     print("Received content:")
     print(result.content if 'result' in locals() else "No content received.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------new part --------------------------
+import os
+import json
+from dotenv import load_dotenv
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.prompts import ChatPromptTemplate
+from langchain.schema import BaseOutputParser
+
+# Load env
+load_dotenv()
+google_api_key = os.getenv("GOOGLE_API_KEY")
+
+# LLM
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-pro",
+    google_api_key=google_api_key,
+    temperature=0
+)
+
+# Custom parser
+class StepsOutputParser(BaseOutputParser):
+    def parse(self, text: str):
+        text = text.strip()
+        # Auto-strip non-JSON chatter
+        start = text.find("{")
+        end = text.rfind("}") + 1
+        if start != -1 and end != -1:
+            text = text[start:end]
+
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {e}")
+
+        if not isinstance(data, dict) or "steps" not in data:
+            raise ValueError("JSON must have a 'steps' key.")
+        for step in data["steps"]:
+            if "step" not in step or "capture" not in step:
+                raise ValueError("Each step must have 'step' and 'capture'.")
+            if "page" in step and not isinstance(step["page"], str):
+                raise ValueError("'page' must be a string when present.")
+        return data
+
+parser = StepsOutputParser()
+
+# Prompt
+prompt = ChatPromptTemplate.from_template("""
+You are a BDD-to-JSON converter.
+Return ONLY valid JSON — no text before or after.
+
+Format:
+{{
+  "steps": [
+    {{
+      "step": "<concise lowercase action>",
+      "page": "<PageName>",   // include ONLY if mentioned
+      "capture": false
+    }}
+  ]
+}}
+
+
+here is the conversion example for your reference while conversion-:
+
+for the given bdd-:
+
+here is how the converted json should look like 
+
+
+
+Rules:
+1. Each object must have "step" and "capture".
+2. "page" is optional — include only if BDD mentions that navigation is required.
+3. If there is no page, omit the "page" key entirely.
+4. "capture" is always false.
+5. No extra text outside JSON.
+
+
+BDD to convert:
+{bdd}
+""")
+
+
+with open("sample.feature","r",encoding = 'utf-8') as f:
+    bdd_text = f.read()
+
+
+
+# Chain
+chain = prompt | llm | parser
+
+try:
+    result = chain.invoke({"bdd": bdd_text})
+    print(json.dumps(result, indent=2))
+except Exception as e:
+    print(f"Error: {e}")
+
