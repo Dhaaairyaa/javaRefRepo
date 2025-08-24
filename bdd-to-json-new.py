@@ -228,3 +228,9 @@ Now, convert the following BDD scenario into JSON:
 {bdd}
 """
 
+
+5. "page" key inclusion rules:
+   - If the page name is explicitly mentioned in the SAME line → include it.
+   - If the step is a click action that explicitly **navigates to a page** → include the page name.
+   - Otherwise → OMIT "page".
+
