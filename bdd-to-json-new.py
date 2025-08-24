@@ -234,3 +234,12 @@ Now, convert the following BDD scenario into JSON:
    - If the step is a click action that explicitly **navigates to a page** → include the page name.
    - Otherwise → OMIT "page".
 
+
+
+PAGE RULES:
+- For normal input steps (typing, entering, selecting, etc.) → DO NOT include "page" unless explicitly mentioned in the same line.  
+- For click actions:
+   a. If the page name is mentioned in the same line → include it.  
+   b. If the step is a click that navigates to a new page → check the next 3–4 steps for a page reference and assign that page name.  
+   c. If no page is ever mentioned → omit "page".  
+
