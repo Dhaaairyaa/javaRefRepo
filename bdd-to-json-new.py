@@ -179,3 +179,52 @@ except Exception as e:
 
 #88
 #pip install sentence-transformers scikit-learn
+
+
+PROMPT_TEMPLATE = """
+You are a precise BDD-to-JSON converter.
+Your ONLY job is to transform BDD steps into JSON according to the rules below.
+
+OUTPUT RULES (highest priority):
+1. RETURN ONLY valid JSON — no explanations, no commentary, no extra text.
+2. Output must strictly follow this structure:
+{
+  "steps": [
+    {
+      "step": "<concise lowercase action>",
+      "capture": true,
+      "page": "<pagename>"   // include only if applicable
+    }
+  ]
+}
+3. Each item MUST contain "step" and "capture".
+4. Exclude verification/assertion/validation steps (do not output them).
+5. For click actions:
+   - If the page name is mentioned → include it in "page".
+   - If the page name is not mentioned → look ahead at the next 3–4 steps to see if a page name is specified. If yes, assign it.
+   - If no page is ever mentioned → omit "page".
+6. Do not hallucinate or invent page names.
+7. Do not alter given values — only lowercase and rephrase actions concisely.
+
+BEHAVIOR RULES:
+- Never output free text, only JSON.
+- Every non-verification BDD step becomes one JSON object.
+- Verification/assertion steps are skipped completely.
+
+REFERENCE EXAMPLES:
+BDD: the user enters oneBankId
+JSON: {"step": "enter oneBankId", "capture": true}
+
+BDD: the user then clicks on login button on the login page
+JSON: {"step": "click login button", "page": "loginPage", "capture": true}
+
+BDD: And the portfolio manager clicks on the "Cancel" button on the modal
+JSON: {"step": "click cancel button", "page": "OnlineCampaignManagementPage", "capture": true}
+
+BDD: Then the modal should not be displayed on the Online Campaign Management Page
+(No output – verification step)
+
+Now, convert the following BDD scenario into JSON:
+{bdd}
+"""
+
